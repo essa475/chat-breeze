@@ -320,8 +320,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_conv_admin: { Args: { _conv: string; _uid: string }; Returns: boolean }
-      is_member: { Args: { _conv: string; _uid: string }; Returns: boolean }
       start_direct_chat: { Args: { _peer: string }; Returns: string }
     }
     Enums: {
