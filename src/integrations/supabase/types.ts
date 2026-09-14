@@ -14,13 +14,315 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attachments: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message_id: string
+          mime: string | null
+          name: string
+          path: string | null
+          size: number | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message_id: string
+          mime?: string | null
+          name: string
+          path?: string | null
+          size?: number | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message_id?: string
+          mime?: string | null
+          name?: string
+          path?: string | null
+          size?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_requests: {
+        Row: {
+          created_at: string
+          from_user: string
+          id: string
+          status: string
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          from_user?: string
+          id?: string
+          status?: string
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          from_user?: string
+          id?: string
+          status?: string
+          to_user?: string
+        }
+        Relationships: []
+      }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_group: boolean
+          last_message_at: string
+          name: string | null
+          photo_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_group?: boolean
+          last_message_at?: string
+          name?: string | null
+          photo_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_group?: boolean
+          last_message_at?: string
+          name?: string | null
+          photo_url?: string | null
+        }
+        Relationships: []
+      }
+      message_hides: {
+        Row: {
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          message_id: string
+          user_id?: string
+        }
+        Update: {
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_hides_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          message_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_receipts: {
+        Row: {
+          delivered_at: string
+          message_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          delivered_at?: string
+          message_id: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          delivered_at?: string
+          message_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string
+          deleted_for_all: boolean
+          edited_at: string | null
+          id: string
+          reply_to: string | null
+          sender_id: string
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          deleted_for_all?: boolean
+          edited_at?: string | null
+          id?: string
+          reply_to?: string | null
+          sender_id?: string
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          deleted_for_all?: boolean
+          edited_at?: string | null
+          id?: string
+          reply_to?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          dob: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          require_request: boolean
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          dob?: string | null
+          email?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          phone?: string | null
+          require_request?: boolean
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          dob?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          require_request?: boolean
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_conv_admin: { Args: { _conv: string; _uid: string }; Returns: boolean }
+      is_member: { Args: { _conv: string; _uid: string }; Returns: boolean }
+      start_direct_chat: { Args: { _peer: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
