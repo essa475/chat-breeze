@@ -343,7 +343,7 @@ function ChatPage() {
                     onTouchEnd={() => pressTimer.current && clearTimeout(pressTimer.current)}
                     onTouchMove={() => pressTimer.current && clearTimeout(pressTimer.current)}
                     className={`animate-rise relative max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm select-none ${
-                      mine ? "bg-[var(--bubble-out)] text-foreground" : "bg-[var(--bubble-in)] text-foreground"
+                      mine ? "bg-bubble-out text-bubble-out-foreground" : "bg-bubble-in text-foreground"
                     }`}
                   >
                     {conversation?.is_group && !mine && (
@@ -373,7 +373,7 @@ function ChatPage() {
                       <span>{formatTime(m.created_at)}</span>
                       {mine &&
                         (readByAll ? (
-                          <CheckCheck className="h-3.5 w-3.5 text-[var(--read)] opacity-100" />
+                          <CheckCheck className="h-3.5 w-3.5 text-read opacity-100" />
                         ) : delivered ? (
                           <CheckCheck className="h-3.5 w-3.5" />
                         ) : (
