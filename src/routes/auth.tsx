@@ -166,7 +166,10 @@ function AuthPage() {
       })
       .eq("id", user.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setStep("birthday");
   }
 

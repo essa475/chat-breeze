@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { signedUrl } from "@/lib/chat";
 
 type Props = {
-  path?: string | null;
+  path?: string | null | undefined;
   fallback: string;
   size?: number;
   className?: string;
