@@ -147,8 +147,14 @@ function AuthPage() {
 
   async function handleIdentity(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) return toast.error("Add your first and last name.");
-    if (usernameState !== "free") return toast.error("Pick an available username.");
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Add your first and last name.");
+      return;
+    }
+    if (usernameState !== "free") {
+      toast.error("Pick an available username.");
+      return;
+    }
     setBusy(true);
     const user = (await supabase.auth.getUser()).data.user!;
     const { error } = await supabase
@@ -166,8 +172,14 @@ function AuthPage() {
 
   async function handleBirthday(e: React.FormEvent) {
     e.preventDefault();
-    if (!dob) return toast.error("Choose your date of birth.");
-    if (age === null || age < 13) return toast.error("You must be at least 13 years old.");
+    if (!dob) {
+      toast.error("Choose your date of birth.");
+      return;
+    }
+    if (age === null || age < 13) {
+      toast.error("You must be at least 13 years old.");
+      return;
+    }
     setBusy(true);
     const user = (await supabase.auth.getUser()).data.user!;
     await supabase.from("profiles").update({ dob }).eq("id", user.id);
@@ -179,10 +191,10 @@ function AuthPage() {
     setBusy(true);
     const user = (await supabase.auth.getUser()).data.user!;
     if (!skip) {
-      const patch: Record<string, string | null> = { bio: bio.trim() || null };
+      const patch: { bio: string | null; avatar_url?: string | null } = { bio: bio.trim() || null };
       if (photo) {
         try {
-          patch.avatar_url = await uploadPublicImage(user.id, photo);
+          patch["avatar_url"] = await uploadPublicImage(user.id, photo);
         } catch {
           toast.error("Couldn't upload that photo — continuing without it.");
         }
