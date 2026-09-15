@@ -110,6 +110,7 @@ function ChatPage() {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [clearedAt, setClearedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [text, setText] = useState("");
@@ -123,7 +124,8 @@ function ChatPage() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [{ data: conv }, { data: mem }, { data: msgs }, { data: hides }] = await Promise.all([
+    const [{ data: conv }, { data: mem }, { data: msgs }, { data: hides }, { data: state }] =
+      await Promise.all([
       supabase.from("conversations").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("conversation_members")
@@ -135,11 +137,18 @@ function ChatPage() {
         .eq("conversation_id", id)
         .order("created_at", { ascending: true }),
       supabase.from("message_hides").select("message_id").eq("user_id", user.id),
-    ]);
+        supabase
+          .from("user_conversation_state")
+          .select("cleared_at")
+          .eq("user_id", user.id)
+          .eq("conversation_id", id)
+          .maybeSingle(),
+      ]);
     setConversation((conv as Conversation | null) ?? null);
     setMembers((mem ?? []) as Member[]);
     setMessages((msgs ?? []) as Message[]);
     setHidden(new Set((hides ?? []).map((h) => h.message_id)));
+    setClearedAt(state?.cleared_at ?? null);
 
     const ids = (msgs ?? []).map((m) => m.id);
     if (ids.length) {
@@ -221,7 +230,14 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const visible = useMemo(() => messages.filter((m) => !hidden.has(m.id)), [messages, hidden]);
+  const visible = useMemo(
+    () =>
+      messages.filter(
+        (message) =>
+          !hidden.has(message.id) && (!clearedAt || new Date(message.created_at) > new Date(clearedAt)),
+      ),
+    [messages, hidden, clearedAt],
+  );
   const peer = useMemo(() => {
     if (!conversation || conversation.is_group || !user) return null;
     const other = members.find((m) => m.user_id !== user.id);

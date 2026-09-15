@@ -64,6 +64,7 @@ function ChatsPage() {
   const [requestCount, setRequestCount] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -327,7 +328,9 @@ function ChatsPage() {
             <li key={conversation.id}>
               <button
                 onClick={() =>
-                  selected.size
+                  longPressTriggered.current
+                    ? (longPressTriggered.current = false)
+                    : selected.size
                     ? toggleSelected(conversation.id)
                     : void navigate({ to: "/app/chat/$id", params: { id: conversation.id } })
                 }
@@ -336,7 +339,11 @@ function ChatsPage() {
                   toggleSelected(conversation.id);
                 }}
                 onTouchStart={() => {
-                  pressTimer.current = setTimeout(() => toggleSelected(conversation.id), 450);
+                  longPressTriggered.current = false;
+                  pressTimer.current = setTimeout(() => {
+                    longPressTriggered.current = true;
+                    toggleSelected(conversation.id);
+                  }, 450);
                 }}
                 onTouchEnd={() => {
                   if (pressTimer.current) clearTimeout(pressTimer.current);
