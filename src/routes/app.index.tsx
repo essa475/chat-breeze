@@ -1,6 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCheck, MessageSquareText, Plus, RotateCcw, Search, Trash2, Users, X } from "lucide-react";
+import {
+  CheckCheck,
+  MessageSquareText,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, EmptyState } from "@/components/AppShell";
@@ -21,7 +30,10 @@ export const Route = createFileRoute("/app/")({
   head: () => ({
     meta: [
       { title: "Your chats — Chat Ebola" },
-      { name: "description", content: "All your Chat Ebola conversations and groups in one place." },
+      {
+        name: "description",
+        content: "All your Chat Ebola conversations and groups in one place.",
+      },
       { property: "og:title", content: "Your chats — Chat Ebola" },
       { property: "og:description", content: "All your conversations and groups in one place." },
       { property: "og:type", content: "website" },
@@ -66,20 +78,36 @@ function ChatsPage() {
       return;
     }
 
-    const [{ data: convs }, { data: members }, { data: messages }, { data: receipts }, { data: hides }, { data: states }] =
-      await Promise.all([
-        supabase.from("conversations").select("*").in("id", ids).order("last_message_at", { ascending: false }),
-        supabase.from("conversation_members").select("conversation_id,user_id,role").in("conversation_id", ids),
-        supabase
-          .from("messages")
-          .select("*")
-          .in("conversation_id", ids)
-          .order("created_at", { ascending: false })
-          .limit(600),
-        supabase.from("message_receipts").select("message_id,read_at").eq("user_id", user.id),
-        supabase.from("message_hides").select("message_id").eq("user_id", user.id),
-        supabase.from("user_conversation_state").select("conversation_id,cleared_at,hidden_at").eq("user_id", user.id),
-      ]);
+    const [
+      { data: convs },
+      { data: members },
+      { data: messages },
+      { data: receipts },
+      { data: hides },
+      { data: states },
+    ] = await Promise.all([
+      supabase
+        .from("conversations")
+        .select("*")
+        .in("id", ids)
+        .order("last_message_at", { ascending: false }),
+      supabase
+        .from("conversation_members")
+        .select("conversation_id,user_id,role")
+        .in("conversation_id", ids),
+      supabase
+        .from("messages")
+        .select("*")
+        .in("conversation_id", ids)
+        .order("created_at", { ascending: false })
+        .limit(600),
+      supabase.from("message_receipts").select("message_id,read_at").eq("user_id", user.id),
+      supabase.from("message_hides").select("message_id").eq("user_id", user.id),
+      supabase
+        .from("user_conversation_state")
+        .select("conversation_id,cleared_at,hidden_at")
+        .eq("user_id", user.id),
+    ]);
 
     const peerIds = Array.from(
       new Set((members ?? []).filter((m) => m.user_id !== user.id).map((m) => m.user_id)),
@@ -96,30 +124,40 @@ function ChatsPage() {
       (m) => m.sender_id !== user.id && !(receipts ?? []).some((r) => r.message_id === m.id),
     );
     if (undelivered.length) {
-      await supabase
-        .from("message_receipts")
-        .upsert(undelivered.map((m) => ({ message_id: m.id, user_id: user.id })), {
+      await supabase.from("message_receipts").upsert(
+        undelivered.map((m) => ({ message_id: m.id, user_id: user.id })),
+        {
           onConflict: "message_id,user_id",
-        });
+        },
+      );
     }
 
-    const stateByConversation = new Map((states ?? []).map((state) => [state.conversation_id, state]));
-    const built: Row[] = (convs ?? []).filter((c) => !stateByConversation.get(c.id)?.hidden_at).map((c) => {
-      const convMembers = (members ?? []).filter((m) => m.conversation_id === c.id);
-      const peerId = convMembers.find((m) => m.user_id !== user.id)?.user_id;
-      const clearedAt = stateByConversation.get(c.id)?.cleared_at;
-      const convMessages = (messages ?? []).filter((m) =>
-        m.conversation_id === c.id && !hidden.has(m.id) && (!clearedAt || new Date(m.created_at) > new Date(clearedAt)),
-      );
-      const unread = convMessages.filter((m) => m.sender_id !== user.id && !readIds.has(m.id)).length;
-      return {
-        conversation: c as Conversation,
-        peer: c.is_group ? null : (peerId ? (profileById.get(peerId) ?? null) : null),
-        last: (convMessages[0] as Message | undefined) ?? null,
-        unread,
-        memberCount: convMembers.length,
-      };
-    });
+    const stateByConversation = new Map(
+      (states ?? []).map((state) => [state.conversation_id, state]),
+    );
+    const built: Row[] = (convs ?? [])
+      .filter((c) => !stateByConversation.get(c.id)?.hidden_at)
+      .map((c) => {
+        const convMembers = (members ?? []).filter((m) => m.conversation_id === c.id);
+        const peerId = convMembers.find((m) => m.user_id !== user.id)?.user_id;
+        const clearedAt = stateByConversation.get(c.id)?.cleared_at;
+        const convMessages = (messages ?? []).filter(
+          (m) =>
+            m.conversation_id === c.id &&
+            !hidden.has(m.id) &&
+            (!clearedAt || new Date(m.created_at) > new Date(clearedAt)),
+        );
+        const unread = convMessages.filter(
+          (m) => m.sender_id !== user.id && !readIds.has(m.id),
+        ).length;
+        return {
+          conversation: c as Conversation,
+          peer: c.is_group ? null : peerId ? (profileById.get(peerId) ?? null) : null,
+          last: (convMessages[0] as Message | undefined) ?? null,
+          unread,
+          memberCount: convMembers.length,
+        };
+      });
     setRows(built);
     setLoading(false);
   }, [user]);
@@ -132,9 +170,21 @@ function ChatsPage() {
     if (!user) return;
     const channel = supabase
       .channel("chat-list")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_members" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_requests" }, () => void loadRequests())
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_members" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_requests" },
+        () => void loadRequests(),
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -181,7 +231,9 @@ function ChatsPage() {
       conversation_id: conversationId,
       ...(action === "clear" ? { cleared_at: now } : { hidden_at: now }),
     }));
-    const { error } = await supabase.from("user_conversation_state").upsert(updates, { onConflict: "user_id,conversation_id" });
+    const { error } = await supabase
+      .from("user_conversation_state")
+      .upsert(updates, { onConflict: "user_id,conversation_id" });
     if (error) {
       toast.error(error.message);
       return;
@@ -199,32 +251,46 @@ function ChatsPage() {
       actions={
         selected.size ? (
           <>
-            <button onClick={() => void applyConversationAction("clear")} aria-label="Clear selected chats" className="rounded-full p-2 hover:bg-muted">
+            <button
+              onClick={() => void applyConversationAction("clear")}
+              aria-label="Clear selected chats"
+              className="rounded-full p-2 hover:bg-muted"
+            >
               <RotateCcw className="h-5 w-5" />
             </button>
-            <button onClick={() => void applyConversationAction("delete")} aria-label="Delete selected chats" className="rounded-full p-2 text-destructive hover:bg-muted">
+            <button
+              onClick={() => void applyConversationAction("delete")}
+              aria-label="Delete selected chats"
+              className="rounded-full p-2 text-destructive hover:bg-muted"
+            >
               <Trash2 className="h-5 w-5" />
             </button>
-            <button onClick={() => setSelected(new Set())} aria-label="Cancel selection" className="rounded-full p-2 hover:bg-muted">
+            <button
+              onClick={() => setSelected(new Set())}
+              aria-label="Cancel selection"
+              className="rounded-full p-2 hover:bg-muted"
+            >
               <X className="h-5 w-5" />
             </button>
           </>
-        ) : <>
-          <button
-            onClick={() => void navigate({ to: "/app/group/new" })}
-            aria-label="New group"
-            className="rounded-full p-2 transition-colors hover:bg-muted"
-          >
-            <Users className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => void navigate({ to: "/app/search" })}
-            aria-label="New chat"
-            className="rounded-full bg-primary p-2 text-primary-foreground"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-        </>
+        ) : (
+          <>
+            <button
+              onClick={() => void navigate({ to: "/app/group/new" })}
+              aria-label="New group"
+              className="rounded-full p-2 transition-colors hover:bg-muted"
+            >
+              <Users className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => void navigate({ to: "/app/search" })}
+              aria-label="New chat"
+              className="rounded-full bg-primary p-2 text-primary-foreground"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </>
+        )
       }
     >
       <div className="px-4 py-3">
@@ -260,16 +326,33 @@ function ChatsPage() {
           {filtered.map(({ conversation, peer, last, unread, memberCount }) => (
             <li key={conversation.id}>
               <button
-                onClick={() => selected.size ? toggleSelected(conversation.id) : void navigate({ to: "/app/chat/$id", params: { id: conversation.id } })}
-                onContextMenu={(event) => { event.preventDefault(); toggleSelected(conversation.id); }}
-                onTouchStart={() => { pressTimer.current = setTimeout(() => toggleSelected(conversation.id), 450); }}
-                onTouchEnd={() => { if (pressTimer.current) clearTimeout(pressTimer.current); }}
-                onTouchMove={() => { if (pressTimer.current) clearTimeout(pressTimer.current); }}
+                onClick={() =>
+                  selected.size
+                    ? toggleSelected(conversation.id)
+                    : void navigate({ to: "/app/chat/$id", params: { id: conversation.id } })
+                }
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  toggleSelected(conversation.id);
+                }}
+                onTouchStart={() => {
+                  pressTimer.current = setTimeout(() => toggleSelected(conversation.id), 450);
+                }}
+                onTouchEnd={() => {
+                  if (pressTimer.current) clearTimeout(pressTimer.current);
+                }}
+                onTouchMove={() => {
+                  if (pressTimer.current) clearTimeout(pressTimer.current);
+                }}
                 className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted ${selected.has(conversation.id) ? "bg-secondary" : ""}`}
               >
                 <Avatar
                   path={conversation.is_group ? conversation.photo_url : peer?.avatar_url}
-                  fallback={conversation.is_group ? (conversation.name ?? "G").slice(0, 2).toUpperCase() : initials(peer)}
+                  fallback={
+                    conversation.is_group
+                      ? (conversation.name ?? "G").slice(0, 2).toUpperCase()
+                      : initials(peer)
+                  }
                   size={50}
                   square={conversation.is_group}
                 />

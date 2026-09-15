@@ -17,7 +17,12 @@ export function AppShell({
   children: ReactNode;
   requestCount?: number;
 }) {
-  const items: { id: Tab; label: string; icon: typeof Search; to: "/app" | "/app/search" | "/app/requests" | "/app/settings" }[] = [
+  const items: {
+    id: Tab;
+    label: string;
+    icon: typeof Search;
+    to: "/app" | "/app/search" | "/app/requests" | "/app/settings";
+  }[] = [
     { id: "chats", label: "Chats", icon: MessageSquareText, to: "/app" },
     { id: "search", label: "Find", icon: Search, to: "/app/search" },
     { id: "requests", label: "Requests", icon: UserPlus, to: "/app/requests" },
@@ -31,7 +36,9 @@ export function AppShell({
         <div className="flex items-center gap-1">{actions}</div>
       </header>
 
-      <main key={tab} className="flex-1 pb-24 animate-tab-enter">{children}</main>
+      <main key={tab} className="flex-1 pb-24 animate-tab-enter">
+        {children}
+      </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl">

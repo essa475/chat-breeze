@@ -17,7 +17,12 @@ export function AttachmentComposer({
 }) {
   const [caption, setCaption] = useState("");
   const previews = useMemo(
-    () => files.map((file) => ({ file, kind: kindOf(file.type, file.name), url: URL.createObjectURL(file) })),
+    () =>
+      files.map((file) => ({
+        file,
+        kind: kindOf(file.type, file.name),
+        url: URL.createObjectURL(file),
+      })),
     [files],
   );
 
@@ -26,18 +31,27 @@ export function AttachmentComposer({
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-foreground text-background animate-pop">
       <header className="flex items-center gap-3 border-b border-background/15 px-4 py-3">
-        <button onClick={onCancel} aria-label="Close preview" className="rounded-full p-2 hover:bg-background/10">
+        <button
+          onClick={onCancel}
+          aria-label="Close preview"
+          className="rounded-full p-2 hover:bg-background/10"
+        >
           <X className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{files.length === 1 ? files[0]?.name : `${files.length} files`}</p>
+          <p className="truncate text-sm font-semibold">
+            {files.length === 1 ? files[0]?.name : `${files.length} files`}
+          </p>
           <p className="text-xs opacity-60">Send to {recipient}</p>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto">
         {previews.map(({ file, kind, url }) => (
-          <div key={`${file.name}-${file.size}`} className="flex min-w-full snap-center items-center justify-center p-5">
+          <div
+            key={`${file.name}-${file.size}`}
+            className="flex min-w-full snap-center items-center justify-center p-5"
+          >
             {kind === "image" ? (
               <img src={url} alt={file.name} className="max-h-full max-w-full object-contain" />
             ) : kind === "video" ? (

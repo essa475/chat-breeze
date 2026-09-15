@@ -13,7 +13,11 @@ export const Route = createFileRoute("/app/group/new")({
   head: () => ({
     meta: [
       { title: "New group — Chat Ebola" },
-      { name: "description", content: "Create a Chat Ebola group, give it a name and photo, and add the people you want in it." },
+      {
+        name: "description",
+        content:
+          "Create a Chat Ebola group, give it a name and photo, and add the people you want in it.",
+      },
       { property: "og:title", content: "New group — Chat Ebola" },
       { property: "og:description", content: "Create a group, name it and add members." },
       { property: "og:type", content: "website" },
@@ -43,21 +47,37 @@ function NewGroupPage() {
   useEffect(() => {
     if (!user) return;
     void (async () => {
-      const { data: mine } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", user.id);
+      const { data: mine } = await supabase
+        .from("conversation_members")
+        .select("conversation_id")
+        .eq("user_id", user.id);
       const ids = (mine ?? []).map((row) => row.conversation_id);
       if (!ids.length) return;
       const [{ data: conversations }, { data: members }] = await Promise.all([
-        supabase.from("conversations").select("id,is_group,last_message_at").in("id", ids).eq("is_group", false).order("last_message_at", { ascending: false }),
-        supabase.from("conversation_members").select("conversation_id,user_id").in("conversation_id", ids),
+        supabase
+          .from("conversations")
+          .select("id,is_group,last_message_at")
+          .in("id", ids)
+          .eq("is_group", false)
+          .order("last_message_at", { ascending: false }),
+        supabase
+          .from("conversation_members")
+          .select("conversation_id,user_id")
+          .in("conversation_id", ids),
       ]);
       const orderedPeerIds = (conversations ?? []).flatMap((conversation) => {
-        const peer = (members ?? []).find((member) => member.conversation_id === conversation.id && member.user_id !== user.id);
+        const peer = (members ?? []).find(
+          (member) => member.conversation_id === conversation.id && member.user_id !== user.id,
+        );
         return peer ? [peer.user_id] : [];
       });
       if (!orderedPeerIds.length) return;
-      const { data: profiles } = await supabase.from("profiles").select("*").in("id", orderedPeerIds);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", orderedPeerIds);
       const byId = new Map(((profiles ?? []) as Profile[]).map((profile) => [profile.id, profile]));
-      setRecent(orderedPeerIds.flatMap((id) => byId.get(id) ? [byId.get(id) as Profile] : []));
+      setRecent(orderedPeerIds.flatMap((id) => (byId.get(id) ? [byId.get(id) as Profile] : [])));
     })();
   }, [user]);
 
@@ -72,7 +92,9 @@ function NewGroupPage() {
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .or(`username.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
+        .or(
+          `username.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
+        )
         .limit(20);
       setResults(((data ?? []) as Profile[]).filter((p) => p.id !== user?.id));
     }, 300);
@@ -80,7 +102,9 @@ function NewGroupPage() {
   }, [query, user]);
 
   function toggle(p: Profile) {
-    setPicked((cur) => (cur.some((x) => x.id === p.id) ? cur.filter((x) => x.id !== p.id) : [...cur, p]));
+    setPicked((cur) =>
+      cur.some((x) => x.id === p.id) ? cur.filter((x) => x.id !== p.id) : [...cur, p],
+    );
   }
 
   async function create() {
@@ -119,7 +143,11 @@ function NewGroupPage() {
   return (
     <div className="mx-auto min-h-screen max-w-3xl bg-background pb-28">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
-        <button onClick={() => void navigate({ to: "/app" })} aria-label="Back" className="rounded-full p-2 hover:bg-muted">
+        <button
+          onClick={() => void navigate({ to: "/app" })}
+          aria-label="Back"
+          className="rounded-full p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="font-display text-xl font-bold">New group</h1>
@@ -127,7 +155,11 @@ function NewGroupPage() {
 
       <div className="space-y-5 px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => fileRef.current?.click()} className="relative" aria-label="Group photo">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="relative"
+            aria-label="Group photo"
+          >
             {preview ? (
               <img src={preview} alt="" className="h-16 w-16 rounded-2xl object-cover" />
             ) : (
@@ -183,7 +215,9 @@ function NewGroupPage() {
         </label>
 
         {query.trim().length < 2 && recent.length > 0 && (
-          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Recent chats</h2>
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Recent chats
+          </h2>
         )}
         <ul className="space-y-1">
           {(query.trim().length >= 2 ? results : recent).map((p) => {
@@ -197,7 +231,9 @@ function NewGroupPage() {
                   <Avatar path={p.avatar_url} fallback={initials(p)} size={42} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{displayName(p)}</span>
-                    <span className="block truncate text-xs text-muted-foreground">@{p.username}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      @{p.username}
+                    </span>
                   </span>
                   <span
                     className={`flex h-6 w-6 items-center justify-center rounded-full border ${
