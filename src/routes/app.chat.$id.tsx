@@ -139,7 +139,7 @@ function ChatPage() {
         supabase.from("message_hides").select("message_id").eq("user_id", user.id),
         supabase
           .from("user_conversation_state")
-          .select("cleared_at")
+          .select("cleared_at,hidden_at")
           .eq("user_id", user.id)
           .eq("conversation_id", id)
           .maybeSingle(),
@@ -148,7 +148,12 @@ function ChatPage() {
     setMembers((mem ?? []) as Member[]);
     setMessages((msgs ?? []) as Message[]);
     setHidden(new Set((hides ?? []).map((h) => h.message_id)));
-    setClearedAt(state?.cleared_at ?? null);
+    setClearedAt(
+      [state?.cleared_at, state?.hidden_at]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1) ?? null,
+    );
 
     const ids = (msgs ?? []).map((m) => m.id);
     if (ids.length) {

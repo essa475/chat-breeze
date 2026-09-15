@@ -137,16 +137,27 @@ function ChatsPage() {
       (states ?? []).map((state) => [state.conversation_id, state]),
     );
     const built: Row[] = (convs ?? [])
-      .filter((c) => !stateByConversation.get(c.id)?.hidden_at)
+      .filter((conversation) => {
+        const hiddenAt = stateByConversation.get(conversation.id)?.hidden_at;
+        return (
+          !hiddenAt ||
+          (messages ?? []).some(
+            (message) =>
+              message.conversation_id === conversation.id && new Date(message.created_at) > new Date(hiddenAt),
+          )
+        );
+      })
       .map((c) => {
         const convMembers = (members ?? []).filter((m) => m.conversation_id === c.id);
         const peerId = convMembers.find((m) => m.user_id !== user.id)?.user_id;
-        const clearedAt = stateByConversation.get(c.id)?.cleared_at;
+        const state = stateByConversation.get(c.id);
+        const cutoff = [state?.cleared_at, state?.hidden_at]
+          .filter((value): value is string => Boolean(value))
+          .sort()
+          .at(-1);
         const convMessages = (messages ?? []).filter(
           (m) =>
-            m.conversation_id === c.id &&
-            !hidden.has(m.id) &&
-            (!clearedAt || new Date(m.created_at) > new Date(clearedAt)),
+            m.conversation_id === c.id && !hidden.has(m.id) && (!cutoff || new Date(m.created_at) > new Date(cutoff)),
         );
         const unread = convMessages.filter(
           (m) => m.sender_id !== user.id && !readIds.has(m.id),
