@@ -126,17 +126,17 @@ function ChatPage() {
     if (!user) return;
     const [{ data: conv }, { data: mem }, { data: msgs }, { data: hides }, { data: state }] =
       await Promise.all([
-      supabase.from("conversations").select("*").eq("id", id).maybeSingle(),
-      supabase
-        .from("conversation_members")
-        .select("conversation_id,user_id,role")
-        .eq("conversation_id", id),
-      supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", id)
-        .order("created_at", { ascending: true }),
-      supabase.from("message_hides").select("message_id").eq("user_id", user.id),
+        supabase.from("conversations").select("*").eq("id", id).maybeSingle(),
+        supabase
+          .from("conversation_members")
+          .select("conversation_id,user_id,role")
+          .eq("conversation_id", id),
+        supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", id)
+          .order("created_at", { ascending: true }),
+        supabase.from("message_hides").select("message_id").eq("user_id", user.id),
         supabase
           .from("user_conversation_state")
           .select("cleared_at")
@@ -234,7 +234,8 @@ function ChatPage() {
     () =>
       messages.filter(
         (message) =>
-          !hidden.has(message.id) && (!clearedAt || new Date(message.created_at) > new Date(clearedAt)),
+          !hidden.has(message.id) &&
+          (!clearedAt || new Date(message.created_at) > new Date(clearedAt)),
       ),
     [messages, hidden, clearedAt],
   );

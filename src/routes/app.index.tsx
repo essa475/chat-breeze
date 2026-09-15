@@ -331,8 +331,8 @@ function ChatsPage() {
                   longPressTriggered.current
                     ? (longPressTriggered.current = false)
                     : selected.size
-                    ? toggleSelected(conversation.id)
-                    : void navigate({ to: "/app/chat/$id", params: { id: conversation.id } })
+                      ? toggleSelected(conversation.id)
+                      : void navigate({ to: "/app/chat/$id", params: { id: conversation.id } })
                 }
                 onContextMenu={(event) => {
                   event.preventDefault();
