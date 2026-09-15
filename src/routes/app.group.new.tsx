@@ -36,8 +36,30 @@ function NewGroupPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
+  const [recent, setRecent] = useState<Profile[]>([]);
   const [picked, setPicked] = useState<Profile[]>([]);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      const { data: mine } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", user.id);
+      const ids = (mine ?? []).map((row) => row.conversation_id);
+      if (!ids.length) return;
+      const [{ data: conversations }, { data: members }] = await Promise.all([
+        supabase.from("conversations").select("id,is_group,last_message_at").in("id", ids).eq("is_group", false).order("last_message_at", { ascending: false }),
+        supabase.from("conversation_members").select("conversation_id,user_id").in("conversation_id", ids),
+      ]);
+      const orderedPeerIds = (conversations ?? []).flatMap((conversation) => {
+        const peer = (members ?? []).find((member) => member.conversation_id === conversation.id && member.user_id !== user.id);
+        return peer ? [peer.user_id] : [];
+      });
+      if (!orderedPeerIds.length) return;
+      const { data: profiles } = await supabase.from("profiles").select("*").in("id", orderedPeerIds);
+      const byId = new Map(((profiles ?? []) as Profile[]).map((profile) => [profile.id, profile]));
+      setRecent(orderedPeerIds.flatMap((id) => byId.get(id) ? [byId.get(id) as Profile] : []));
+    })();
+  }, [user]);
 
   useEffect(() => {
     const q = query.trim();
@@ -80,27 +102,18 @@ function NewGroupPage() {
         toast.error("Couldn't upload the group photo.");
       }
     }
-    const { data: conv, error } = await supabase
-      .from("conversations")
-      .insert({ is_group: true, name: name.trim(), photo_url: photoPath, created_by: user.id })
-      .select("id")
-      .single();
-    if (error || !conv) {
+    const { data: conversationId, error } = await supabase.rpc("create_group", {
+      _name: name.trim(),
+      _photo_url: photoPath,
+      _member_ids: picked.map((profile) => profile.id),
+    });
+    if (error || !conversationId) {
       setBusy(false);
       toast.error(error?.message ?? "Couldn't create the group.");
       return;
     }
-    const rows = [
-      { conversation_id: conv.id, user_id: user.id, role: "admin" },
-      ...picked.map((p) => ({ conversation_id: conv.id, user_id: p.id, role: "member" })),
-    ];
-    const { error: memberError } = await supabase.from("conversation_members").insert(rows);
     setBusy(false);
-    if (memberError) {
-      toast.error(memberError.message);
-      return;
-    }
-    void navigate({ to: "/app/chat/$id", params: { id: conv.id } });
+    void navigate({ to: "/app/chat/$id", params: { id: conversationId } });
   }
 
   return (
@@ -169,8 +182,11 @@ function NewGroupPage() {
           />
         </label>
 
+        {query.trim().length < 2 && recent.length > 0 && (
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Recent chats</h2>
+        )}
         <ul className="space-y-1">
-          {results.map((p) => {
+          {(query.trim().length >= 2 ? results : recent).map((p) => {
             const on = picked.some((x) => x.id === p.id);
             return (
               <li key={p.id}>

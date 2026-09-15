@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { MessageSquareText, Search, Settings, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -17,8 +17,7 @@ export function AppShell({
   children: ReactNode;
   requestCount?: number;
 }) {
-  const navigate = useNavigate();
-  const items: { id: Tab; label: string; icon: typeof Search; to: string }[] = [
+  const items: { id: Tab; label: string; icon: typeof Search; to: "/app" | "/app/search" | "/app/requests" | "/app/settings" }[] = [
     { id: "chats", label: "Chats", icon: MessageSquareText, to: "/app" },
     { id: "search", label: "Find", icon: Search, to: "/app/search" },
     { id: "requests", label: "Requests", icon: UserPlus, to: "/app/requests" },
@@ -32,16 +31,17 @@ export function AppShell({
         <div className="flex items-center gap-1">{actions}</div>
       </header>
 
-      <main className="flex-1 pb-24">{children}</main>
+      <main key={tab} className="flex-1 pb-24 animate-tab-enter">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl">
           {items.map((item) => {
             const active = item.id === tab;
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => void navigate({ to: item.to })}
+                to={item.to}
+                preload="intent"
                 className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium"
               >
                 <span
@@ -59,7 +59,7 @@ export function AppShell({
                     {requestCount}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>
