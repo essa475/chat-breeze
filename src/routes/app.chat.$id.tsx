@@ -11,6 +11,8 @@ import {
   Pencil,
   Send,
   Smile,
+  Mic,
+  Plus,
   Trash2,
   Users,
   X,
@@ -20,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "@/components/AuthGate";
 import { Avatar } from "@/components/Avatar";
 import { AttachmentView } from "@/components/AttachmentView";
+import { AttachmentComposer } from "@/components/AttachmentComposer";
 import { GroupPanel } from "@/components/GroupPanel";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -61,6 +64,7 @@ type Receipt = { message_id: string; user_id: string; delivered_at: string; read
 type MenuState = { message: Message; x: number; y: number } | null;
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const MORE_EMOJIS = ["😀", "😍", "🥰", "🤣", "😊", "👏", "🔥", "🎉", "💯", "🤔", "👀", "💪", "✅", "💔", "😭", "😡", "🤝", "✨"];
 
 function ChatPage() {
   const { id } = Route.useParams();
@@ -86,6 +90,8 @@ function ChatPage() {
   const [editing, setEditing] = useState<Message | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const [showGroup, setShowGroup] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -194,18 +200,22 @@ function ChatPage() {
     void load();
   }
 
-  async function sendFiles(files: FileList) {
-    if (!user) return;
+  function chooseFiles(files: FileList) {
     const list = Array.from(files);
-    const tooBig = list.find((f) => f.size > MAX_FILE_BYTES);
+    const tooBig = list.find((file) => file.size > MAX_FILE_BYTES);
     if (tooBig) {
       toast.error(`${tooBig.name} is ${formatBytes(tooBig.size)} — the limit is 50 MB.`);
       return;
     }
+    setPendingFiles(list);
+  }
+
+  async function sendFiles(files: File[], caption: string) {
+    if (!user) return;
     setSending(true);
     const { data: msg, error } = await supabase
       .from("messages")
-      .insert({ conversation_id: id, sender_id: user.id, body: text.trim() || null, reply_to: replyTo?.id ?? null })
+      .insert({ conversation_id: id, sender_id: user.id, body: caption || null, reply_to: replyTo?.id ?? null })
       .select("id")
       .single();
     if (error || !msg) {
@@ -213,7 +223,7 @@ function ChatPage() {
       toast.error(error?.message ?? "Couldn't send that.");
       return;
     }
-    for (const file of list) {
+    for (const file of files) {
       const path = `${id}/${msg.id}/${crypto.randomUUID()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("attachments").upload(path, file);
       if (upErr) {
@@ -230,7 +240,7 @@ function ChatPage() {
         kind: kindOf(file.type, file.name),
       });
     }
-    setText("");
+    setPendingFiles([]);
     setReplyTo(null);
     setSending(false);
     void load();
@@ -342,7 +352,7 @@ function ChatPage() {
                     }}
                     onTouchEnd={() => pressTimer.current && clearTimeout(pressTimer.current)}
                     onTouchMove={() => pressTimer.current && clearTimeout(pressTimer.current)}
-                    className={`animate-rise relative max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm select-none ${
+                    className={`animate-rise relative mb-3 max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm select-none ${
                       mine ? "bg-bubble-out text-bubble-out-foreground" : "bg-bubble-in text-foreground"
                     }`}
                   >
@@ -381,7 +391,7 @@ function ChatPage() {
                         ))}
                     </p>
                     {msgReactions.length > 0 && (
-                      <div className="absolute -bottom-3 left-2 flex gap-0.5 rounded-full border border-border bg-background px-1.5 py-0.5 text-xs shadow">
+                      <div className={`absolute -bottom-5 flex gap-0.5 rounded-full border border-border bg-background px-1.5 py-0.5 text-xs shadow ${mine ? "right-2" : "left-2"}`}>
                         {Array.from(new Set(msgReactions.map((r) => r.emoji))).map((e) => (
                           <span key={e}>{e}</span>
                         ))}
@@ -428,30 +438,32 @@ function ChatPage() {
           multiple
           hidden
           onChange={(e) => {
-            if (e.target.files?.length) void sendFiles(e.target.files);
+            if (e.target.files?.length) chooseFiles(e.target.files);
             e.target.value = "";
           }}
         />
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          rows={1}
-          placeholder="Message"
-          className="max-h-32 flex-1 resize-none rounded-2xl bg-muted px-4 py-2.5 text-sm outline-none"
-        />
+        <div className="flex flex-1 items-end rounded-3xl bg-muted px-4 transition-all duration-300 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            rows={1}
+            placeholder="Message"
+            className="max-h-32 min-h-11 flex-1 resize-none bg-transparent py-3 text-sm outline-none"
+          />
+        </div>
         <button
           onClick={() => void send()}
           disabled={sending}
           aria-label="Send"
           className="rounded-full bg-primary p-2.5 text-primary-foreground disabled:opacity-60"
         >
-          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : text.trim() ? <Send className="h-5 w-5 animate-pop" /> : <Mic className="h-5 w-5 animate-pop" />}
         </button>
       </div>
 
@@ -462,12 +474,15 @@ function ChatPage() {
             className="fixed z-50 w-52 overflow-hidden rounded-2xl border border-border bg-background py-1 shadow-xl"
             style={{ left: menu.x, top: menu.y }}
           >
-            <div className="flex justify-between px-3 py-2">
+            <div className="flex items-center justify-between px-3 py-2">
               {EMOJIS.map((e) => (
                 <button key={e} onClick={() => void react(menu.message, e)} className="text-lg">
                   {e}
                 </button>
               ))}
+              <button onClick={() => setShowEmojiPicker(true)} aria-label="More reactions" className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             <MenuItem
               icon={Copy}
@@ -516,6 +531,26 @@ function ChatPage() {
           onClose={() => setShowGroup(false)}
           onChanged={() => void load()}
           onLeft={() => void navigate({ to: "/app" })}
+        />
+      )}
+      {showEmojiPicker && menu && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-4" onClick={() => setShowEmojiPicker(false)}>
+          <div className="grid w-full max-w-sm grid-cols-6 gap-2 rounded-2xl bg-background p-4 shadow-xl animate-pop" onClick={(event) => event.stopPropagation()}>
+            {MORE_EMOJIS.map((emoji) => (
+              <button key={emoji} onClick={() => { setShowEmojiPicker(false); void react(menu.message, emoji); }} className="rounded-xl p-2 text-2xl hover:bg-muted">
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {pendingFiles.length > 0 && (
+        <AttachmentComposer
+          files={pendingFiles}
+          recipient={title}
+          sending={sending}
+          onCancel={() => setPendingFiles([])}
+          onSend={(caption) => void sendFiles(pendingFiles, caption)}
         />
       )}
     </div>

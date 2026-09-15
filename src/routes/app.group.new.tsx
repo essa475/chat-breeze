@@ -104,7 +104,7 @@ function NewGroupPage() {
     }
     const { data: conversationId, error } = await supabase.rpc("create_group", {
       _name: name.trim(),
-      _photo_url: photoPath,
+      _photo_url: photoPath ?? "",
       _member_ids: picked.map((profile) => profile.id),
     });
     if (error || !conversationId) {
