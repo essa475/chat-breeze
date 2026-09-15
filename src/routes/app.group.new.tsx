@@ -13,7 +13,11 @@ export const Route = createFileRoute("/app/group/new")({
   head: () => ({
     meta: [
       { title: "New group — Chat Ebola" },
-      { name: "description", content: "Create a Chat Ebola group, give it a name and photo, and add the people you want in it." },
+      {
+        name: "description",
+        content:
+          "Create a Chat Ebola group, give it a name and photo, and add the people you want in it.",
+      },
       { property: "og:title", content: "New group — Chat Ebola" },
       { property: "og:description", content: "Create a group, name it and add members." },
       { property: "og:type", content: "website" },
@@ -36,8 +40,46 @@ function NewGroupPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
+  const [recent, setRecent] = useState<Profile[]>([]);
   const [picked, setPicked] = useState<Profile[]>([]);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      const { data: mine } = await supabase
+        .from("conversation_members")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+      const ids = (mine ?? []).map((row) => row.conversation_id);
+      if (!ids.length) return;
+      const [{ data: conversations }, { data: members }] = await Promise.all([
+        supabase
+          .from("conversations")
+          .select("id,is_group,last_message_at")
+          .in("id", ids)
+          .eq("is_group", false)
+          .order("last_message_at", { ascending: false }),
+        supabase
+          .from("conversation_members")
+          .select("conversation_id,user_id")
+          .in("conversation_id", ids),
+      ]);
+      const orderedPeerIds = (conversations ?? []).flatMap((conversation) => {
+        const peer = (members ?? []).find(
+          (member) => member.conversation_id === conversation.id && member.user_id !== user.id,
+        );
+        return peer ? [peer.user_id] : [];
+      });
+      if (!orderedPeerIds.length) return;
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", orderedPeerIds);
+      const byId = new Map(((profiles ?? []) as Profile[]).map((profile) => [profile.id, profile]));
+      setRecent(orderedPeerIds.flatMap((id) => (byId.get(id) ? [byId.get(id) as Profile] : [])));
+    })();
+  }, [user]);
 
   useEffect(() => {
     const q = query.trim();
@@ -50,7 +92,9 @@ function NewGroupPage() {
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .or(`username.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
+        .or(
+          `username.ilike.${like},first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
+        )
         .limit(20);
       setResults(((data ?? []) as Profile[]).filter((p) => p.id !== user?.id));
     }, 300);
@@ -58,7 +102,9 @@ function NewGroupPage() {
   }, [query, user]);
 
   function toggle(p: Profile) {
-    setPicked((cur) => (cur.some((x) => x.id === p.id) ? cur.filter((x) => x.id !== p.id) : [...cur, p]));
+    setPicked((cur) =>
+      cur.some((x) => x.id === p.id) ? cur.filter((x) => x.id !== p.id) : [...cur, p],
+    );
   }
 
   async function create() {
@@ -80,33 +126,28 @@ function NewGroupPage() {
         toast.error("Couldn't upload the group photo.");
       }
     }
-    const { data: conv, error } = await supabase
-      .from("conversations")
-      .insert({ is_group: true, name: name.trim(), photo_url: photoPath, created_by: user.id })
-      .select("id")
-      .single();
-    if (error || !conv) {
+    const { data: conversationId, error } = await supabase.rpc("create_group", {
+      _name: name.trim(),
+      _photo_url: photoPath ?? "",
+      _member_ids: picked.map((profile) => profile.id),
+    });
+    if (error || !conversationId) {
       setBusy(false);
       toast.error(error?.message ?? "Couldn't create the group.");
       return;
     }
-    const rows = [
-      { conversation_id: conv.id, user_id: user.id, role: "admin" },
-      ...picked.map((p) => ({ conversation_id: conv.id, user_id: p.id, role: "member" })),
-    ];
-    const { error: memberError } = await supabase.from("conversation_members").insert(rows);
     setBusy(false);
-    if (memberError) {
-      toast.error(memberError.message);
-      return;
-    }
-    void navigate({ to: "/app/chat/$id", params: { id: conv.id } });
+    void navigate({ to: "/app/chat/$id", params: { id: conversationId } });
   }
 
   return (
     <div className="mx-auto min-h-screen max-w-3xl bg-background pb-28">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
-        <button onClick={() => void navigate({ to: "/app" })} aria-label="Back" className="rounded-full p-2 hover:bg-muted">
+        <button
+          onClick={() => void navigate({ to: "/app" })}
+          aria-label="Back"
+          className="rounded-full p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="font-display text-xl font-bold">New group</h1>
@@ -114,7 +155,11 @@ function NewGroupPage() {
 
       <div className="space-y-5 px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => fileRef.current?.click()} className="relative" aria-label="Group photo">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="relative"
+            aria-label="Group photo"
+          >
             {preview ? (
               <img src={preview} alt="" className="h-16 w-16 rounded-2xl object-cover" />
             ) : (
@@ -169,8 +214,13 @@ function NewGroupPage() {
           />
         </label>
 
+        {query.trim().length < 2 && recent.length > 0 && (
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Recent chats
+          </h2>
+        )}
         <ul className="space-y-1">
-          {results.map((p) => {
+          {(query.trim().length >= 2 ? results : recent).map((p) => {
             const on = picked.some((x) => x.id === p.id);
             return (
               <li key={p.id}>
@@ -181,7 +231,9 @@ function NewGroupPage() {
                   <Avatar path={p.avatar_url} fallback={initials(p)} size={42} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{displayName(p)}</span>
-                    <span className="block truncate text-xs text-muted-foreground">@{p.username}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      @{p.username}
+                    </span>
                   </span>
                   <span
                     className={`flex h-6 w-6 items-center justify-center rounded-full border ${

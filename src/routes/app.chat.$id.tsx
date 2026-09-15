@@ -11,6 +11,8 @@ import {
   Pencil,
   Send,
   Smile,
+  Mic,
+  Plus,
   Trash2,
   Users,
   X,
@@ -20,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "@/components/AuthGate";
 import { Avatar } from "@/components/Avatar";
 import { AttachmentView } from "@/components/AttachmentView";
+import { AttachmentComposer } from "@/components/AttachmentComposer";
 import { GroupPanel } from "@/components/GroupPanel";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -41,7 +44,11 @@ export const Route = createFileRoute("/app/chat/$id")({
   head: () => ({
     meta: [
       { title: "Conversation — Chat Ebola" },
-      { name: "description", content: "Send messages, photos, videos and files up to 50 MB in your Chat Ebola conversation." },
+      {
+        name: "description",
+        content:
+          "Send messages, photos, videos and files up to 50 MB in your Chat Ebola conversation.",
+      },
       { property: "og:title", content: "Conversation — Chat Ebola" },
       { property: "og:description", content: "Messages, photos, videos and files up to 50 MB." },
       { property: "og:type", content: "website" },
@@ -57,10 +64,35 @@ export const Route = createFileRoute("/app/chat/$id")({
 
 type Member = { conversation_id: string; user_id: string; role: string };
 type Reaction = { message_id: string; user_id: string; emoji: string };
-type Receipt = { message_id: string; user_id: string; delivered_at: string; read_at: string | null };
+type Receipt = {
+  message_id: string;
+  user_id: string;
+  delivered_at: string;
+  read_at: string | null;
+};
 type MenuState = { message: Message; x: number; y: number } | null;
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const MORE_EMOJIS = [
+  "😀",
+  "😍",
+  "🥰",
+  "🤣",
+  "😊",
+  "👏",
+  "🔥",
+  "🎉",
+  "💯",
+  "🤔",
+  "👀",
+  "💪",
+  "✅",
+  "💔",
+  "😭",
+  "😡",
+  "🤝",
+  "✨",
+];
 
 function ChatPage() {
   const { id } = Route.useParams();
@@ -78,6 +110,7 @@ function ChatPage() {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [clearedAt, setClearedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [text, setText] = useState("");
@@ -86,41 +119,69 @@ function ChatPage() {
   const [editing, setEditing] = useState<Message | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const [showGroup, setShowGroup] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [{ data: conv }, { data: mem }, { data: msgs }, { data: hides }] = await Promise.all([
-      supabase.from("conversations").select("*").eq("id", id).maybeSingle(),
-      supabase.from("conversation_members").select("conversation_id,user_id,role").eq("conversation_id", id),
-      supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true }),
-      supabase.from("message_hides").select("message_id").eq("user_id", user.id),
-    ]);
+    const [{ data: conv }, { data: mem }, { data: msgs }, { data: hides }, { data: state }] =
+      await Promise.all([
+        supabase.from("conversations").select("*").eq("id", id).maybeSingle(),
+        supabase
+          .from("conversation_members")
+          .select("conversation_id,user_id,role")
+          .eq("conversation_id", id),
+        supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", id)
+          .order("created_at", { ascending: true }),
+        supabase.from("message_hides").select("message_id").eq("user_id", user.id),
+        supabase
+          .from("user_conversation_state")
+          .select("cleared_at,hidden_at")
+          .eq("user_id", user.id)
+          .eq("conversation_id", id)
+          .maybeSingle(),
+      ]);
     setConversation((conv as Conversation | null) ?? null);
     setMembers((mem ?? []) as Member[]);
     setMessages((msgs ?? []) as Message[]);
     setHidden(new Set((hides ?? []).map((h) => h.message_id)));
+    setClearedAt(
+      [state?.cleared_at, state?.hidden_at]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1) ?? null,
+    );
 
     const ids = (msgs ?? []).map((m) => m.id);
     if (ids.length) {
       const [{ data: atts }, { data: reacts }, { data: recs }] = await Promise.all([
         supabase.from("attachments").select("*").in("message_id", ids),
         supabase.from("message_reactions").select("message_id,user_id,emoji").in("message_id", ids),
-        supabase.from("message_receipts").select("message_id,user_id,delivered_at,read_at").in("message_id", ids),
+        supabase
+          .from("message_receipts")
+          .select("message_id,user_id,delivered_at,read_at")
+          .in("message_id", ids),
       ]);
       setAttachments((atts ?? []) as Attachment[]);
       setReactions((reacts ?? []) as Reaction[]);
       setReceipts((recs ?? []) as Receipt[]);
 
       const unread = (msgs ?? []).filter(
-        (m) => m.sender_id !== user.id && !(recs ?? []).some((r) => r.message_id === m.id && r.user_id === user.id && r.read_at),
+        (m) =>
+          m.sender_id !== user.id &&
+          !(recs ?? []).some((r) => r.message_id === m.id && r.user_id === user.id && r.read_at),
       );
       if (unread.length) {
         const now = new Date().toISOString();
-        await supabase
-          .from("message_receipts")
-          .upsert(unread.map((m) => ({ message_id: m.id, user_id: user.id, read_at: now })), {
+        await supabase.from("message_receipts").upsert(
+          unread.map((m) => ({ message_id: m.id, user_id: user.id, read_at: now })),
+          {
             onConflict: "message_id,user_id",
-          });
+          },
+        );
       }
     }
 
@@ -139,13 +200,30 @@ function ChatPage() {
   useEffect(() => {
     const channel = supabase
       .channel(`chat-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` }, () =>
-        void load(),
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },
+        () => void load(),
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "message_receipts" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_members", filter: `conversation_id=eq.${id}` }, () =>
-        void load(),
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_reactions" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_receipts" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversation_members",
+          filter: `conversation_id=eq.${id}`,
+        },
+        () => void load(),
       )
       .subscribe();
     return () => {
@@ -157,7 +235,15 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const visible = useMemo(() => messages.filter((m) => !hidden.has(m.id)), [messages, hidden]);
+  const visible = useMemo(
+    () =>
+      messages.filter(
+        (message) =>
+          !hidden.has(message.id) &&
+          (!clearedAt || new Date(message.created_at) > new Date(clearedAt)),
+      ),
+    [messages, hidden, clearedAt],
+  );
   const peer = useMemo(() => {
     if (!conversation || conversation.is_group || !user) return null;
     const other = members.find((m) => m.user_id !== user.id);
@@ -172,7 +258,10 @@ function ChatPage() {
     if (editing) {
       if (!body) return;
       setSending(true);
-      await supabase.from("messages").update({ body, edited_at: new Date().toISOString() }).eq("id", editing.id);
+      await supabase
+        .from("messages")
+        .update({ body, edited_at: new Date().toISOString() })
+        .eq("id", editing.id);
       setEditing(null);
       setText("");
       setSending(false);
@@ -194,18 +283,27 @@ function ChatPage() {
     void load();
   }
 
-  async function sendFiles(files: FileList) {
-    if (!user) return;
+  function chooseFiles(files: FileList) {
     const list = Array.from(files);
-    const tooBig = list.find((f) => f.size > MAX_FILE_BYTES);
+    const tooBig = list.find((file) => file.size > MAX_FILE_BYTES);
     if (tooBig) {
       toast.error(`${tooBig.name} is ${formatBytes(tooBig.size)} — the limit is 50 MB.`);
       return;
     }
+    setPendingFiles(list);
+  }
+
+  async function sendFiles(files: File[], caption: string) {
+    if (!user) return;
     setSending(true);
     const { data: msg, error } = await supabase
       .from("messages")
-      .insert({ conversation_id: id, sender_id: user.id, body: text.trim() || null, reply_to: replyTo?.id ?? null })
+      .insert({
+        conversation_id: id,
+        sender_id: user.id,
+        body: caption || null,
+        reply_to: replyTo?.id ?? null,
+      })
       .select("id")
       .single();
     if (error || !msg) {
@@ -213,7 +311,7 @@ function ChatPage() {
       toast.error(error?.message ?? "Couldn't send that.");
       return;
     }
-    for (const file of list) {
+    for (const file of files) {
       const path = `${id}/${msg.id}/${crypto.randomUUID()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("attachments").upload(path, file);
       if (upErr) {
@@ -230,7 +328,7 @@ function ChatPage() {
         kind: kindOf(file.type, file.name),
       });
     }
-    setText("");
+    setPendingFiles([]);
     setReplyTo(null);
     setSending(false);
     void load();
@@ -240,11 +338,18 @@ function ChatPage() {
     if (!user) return;
     const existing = reactions.find((r) => r.message_id === message.id && r.user_id === user.id);
     if (existing && existing.emoji === emoji) {
-      await supabase.from("message_reactions").delete().eq("message_id", message.id).eq("user_id", user.id);
+      await supabase
+        .from("message_reactions")
+        .delete()
+        .eq("message_id", message.id)
+        .eq("user_id", user.id);
     } else {
       await supabase
         .from("message_reactions")
-        .upsert({ message_id: message.id, user_id: user.id, emoji }, { onConflict: "message_id,user_id" });
+        .upsert(
+          { message_id: message.id, user_id: user.id, emoji },
+          { onConflict: "message_id,user_id" },
+        );
     }
     setMenu(null);
     void load();
@@ -258,13 +363,20 @@ function ChatPage() {
   }
 
   async function deleteForAll(message: Message) {
-    await supabase.from("messages").update({ body: null, deleted_for_all: true }).eq("id", message.id);
+    await supabase
+      .from("messages")
+      .update({ body: null, deleted_for_all: true })
+      .eq("id", message.id);
     setMenu(null);
     void load();
   }
 
   function openMenu(message: Message, x: number, y: number) {
-    setMenu({ message, x: Math.min(x, window.innerWidth - 210), y: Math.min(y, window.innerHeight - 320) });
+    setMenu({
+      message,
+      x: Math.min(x, window.innerWidth - 210),
+      y: Math.min(y, window.innerHeight - 320),
+    });
   }
 
   const title = conversation?.is_group ? (conversation.name ?? "Group") : displayName(peer);
@@ -272,7 +384,11 @@ function ChatPage() {
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col bg-background">
       <header className="flex items-center gap-3 border-b border-border px-3 py-2.5">
-        <button onClick={() => void navigate({ to: "/app" })} aria-label="Back" className="rounded-full p-2 hover:bg-muted">
+        <button
+          onClick={() => void navigate({ to: "/app" })}
+          aria-label="Back"
+          className="rounded-full p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
@@ -288,12 +404,20 @@ function ChatPage() {
           <span className="min-w-0">
             <span className="block truncate font-semibold">{title}</span>
             <span className="block truncate text-xs text-muted-foreground">
-              {conversation?.is_group ? `${members.length} members` : peer?.username ? `@${peer.username}` : ""}
+              {conversation?.is_group
+                ? `${members.length} members`
+                : peer?.username
+                  ? `@${peer.username}`
+                  : ""}
             </span>
           </span>
         </button>
         {conversation?.is_group && (
-          <button onClick={() => setShowGroup(true)} aria-label="Group info" className="rounded-full p-2 hover:bg-muted">
+          <button
+            onClick={() => setShowGroup(true)}
+            aria-label="Group info"
+            className="rounded-full p-2 hover:bg-muted"
+          >
             <Users className="h-5 w-5" />
           </button>
         )}
@@ -310,7 +434,9 @@ function ChatPage() {
           visible.map((m, i) => {
             const mine = m.sender_id === user?.id;
             const prev = visible[i - 1];
-            const newDay = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+            const newDay =
+              !prev ||
+              new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
             const sender = profiles.get(m.sender_id);
             const msgReactions = reactions.filter((r) => r.message_id === m.id);
             const msgAtts = attachments.filter((a) => a.message_id === m.id);
@@ -342,16 +468,22 @@ function ChatPage() {
                     }}
                     onTouchEnd={() => pressTimer.current && clearTimeout(pressTimer.current)}
                     onTouchMove={() => pressTimer.current && clearTimeout(pressTimer.current)}
-                    className={`animate-rise relative max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm select-none ${
-                      mine ? "bg-bubble-out text-bubble-out-foreground" : "bg-bubble-in text-foreground"
+                    className={`animate-rise relative mb-3 max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm select-none ${
+                      mine
+                        ? "bg-bubble-out text-bubble-out-foreground"
+                        : "bg-bubble-in text-foreground"
                     }`}
                   >
                     {conversation?.is_group && !mine && (
-                      <p className="mb-0.5 text-xs font-semibold opacity-70">{displayName(sender)}</p>
+                      <p className="mb-0.5 text-xs font-semibold opacity-70">
+                        {displayName(sender)}
+                      </p>
                     )}
                     {replied && (
                       <p className="mb-1 truncate rounded-lg border-l-2 border-foreground/30 bg-foreground/5 px-2 py-1 text-xs opacity-80">
-                        {replied.deleted_for_all ? "Deleted message" : (replied.body ?? "Attachment")}
+                        {replied.deleted_for_all
+                          ? "Deleted message"
+                          : (replied.body ?? "Attachment")}
                       </p>
                     )}
                     {m.deleted_for_all ? (
@@ -381,12 +513,16 @@ function ChatPage() {
                         ))}
                     </p>
                     {msgReactions.length > 0 && (
-                      <div className="absolute -bottom-3 left-2 flex gap-0.5 rounded-full border border-border bg-background px-1.5 py-0.5 text-xs shadow">
+                      <div
+                        className={`absolute -bottom-5 flex gap-0.5 rounded-full border border-border bg-background px-1.5 py-0.5 text-xs shadow ${mine ? "right-2" : "left-2"}`}
+                      >
                         {Array.from(new Set(msgReactions.map((r) => r.emoji))).map((e) => (
                           <span key={e}>{e}</span>
                         ))}
                         {msgReactions.length > 1 && (
-                          <span className="text-[10px] text-muted-foreground">{msgReactions.length}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {msgReactions.length}
+                          </span>
                         )}
                       </div>
                     )}
@@ -419,7 +555,11 @@ function ChatPage() {
       )}
 
       <div className="flex items-end gap-2 border-t border-border px-3 py-2.5">
-        <button onClick={() => fileRef.current?.click()} aria-label="Attach file" className="rounded-full p-2.5 hover:bg-muted">
+        <button
+          onClick={() => fileRef.current?.click()}
+          aria-label="Attach file"
+          className="rounded-full p-2.5 hover:bg-muted"
+        >
           <Paperclip className="h-5 w-5" />
         </button>
         <input
@@ -428,30 +568,38 @@ function ChatPage() {
           multiple
           hidden
           onChange={(e) => {
-            if (e.target.files?.length) void sendFiles(e.target.files);
+            if (e.target.files?.length) chooseFiles(e.target.files);
             e.target.value = "";
           }}
         />
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          rows={1}
-          placeholder="Message"
-          className="max-h-32 flex-1 resize-none rounded-2xl bg-muted px-4 py-2.5 text-sm outline-none"
-        />
+        <div className="flex flex-1 items-end rounded-3xl bg-muted px-4 transition-all duration-300 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            rows={1}
+            placeholder="Message"
+            className="max-h-32 min-h-11 flex-1 resize-none bg-transparent py-3 text-sm outline-none"
+          />
+        </div>
         <button
           onClick={() => void send()}
           disabled={sending}
           aria-label="Send"
           className="rounded-full bg-primary p-2.5 text-primary-foreground disabled:opacity-60"
         >
-          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          {sending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : text.trim() ? (
+            <Send className="h-5 w-5 animate-pop" />
+          ) : (
+            <Mic className="h-5 w-5 animate-pop" />
+          )}
         </button>
       </div>
 
@@ -462,12 +610,19 @@ function ChatPage() {
             className="fixed z-50 w-52 overflow-hidden rounded-2xl border border-border bg-background py-1 shadow-xl"
             style={{ left: menu.x, top: menu.y }}
           >
-            <div className="flex justify-between px-3 py-2">
+            <div className="flex items-center justify-between px-3 py-2">
               {EMOJIS.map((e) => (
                 <button key={e} onClick={() => void react(menu.message, e)} className="text-lg">
                   {e}
                 </button>
               ))}
+              <button
+                onClick={() => setShowEmojiPicker(true)}
+                aria-label="More reactions"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-muted"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             <MenuItem
               icon={Copy}
@@ -498,9 +653,17 @@ function ChatPage() {
                 }}
               />
             )}
-            <MenuItem icon={Trash2} label="Delete for me" onClick={() => void hideForMe(menu.message)} />
+            <MenuItem
+              icon={Trash2}
+              label="Delete for me"
+              onClick={() => void hideForMe(menu.message)}
+            />
             {menu.message.sender_id === user?.id && (
-              <MenuItem icon={Trash2} label="Delete for everyone" onClick={() => void deleteForAll(menu.message)} />
+              <MenuItem
+                icon={Trash2}
+                label="Delete for everyone"
+                onClick={() => void deleteForAll(menu.message)}
+              />
             )}
           </div>
         </>
@@ -518,6 +681,39 @@ function ChatPage() {
           onLeft={() => void navigate({ to: "/app" })}
         />
       )}
+      {showEmojiPicker && menu && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-4"
+          onClick={() => setShowEmojiPicker(false)}
+        >
+          <div
+            className="grid w-full max-w-sm grid-cols-6 gap-2 rounded-2xl bg-background p-4 shadow-xl animate-pop"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {MORE_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  setShowEmojiPicker(false);
+                  void react(menu.message, emoji);
+                }}
+                className="rounded-xl p-2 text-2xl hover:bg-muted"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {pendingFiles.length > 0 && (
+        <AttachmentComposer
+          files={pendingFiles}
+          recipient={title}
+          sending={sending}
+          onCancel={() => setPendingFiles([])}
+          onSend={(caption) => void sendFiles(pendingFiles, caption)}
+        />
+      )}
     </div>
   );
 }
@@ -532,7 +728,10 @@ function MenuItem({
   onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-muted">
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-muted"
+    >
       <Icon className="h-4 w-4 opacity-70" /> {label}
     </button>
   );

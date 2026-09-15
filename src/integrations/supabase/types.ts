@@ -315,11 +315,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_conversation_state: {
+        Row: {
+          cleared_at: string | null
+          conversation_id: string
+          hidden_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cleared_at?: string | null
+          conversation_id: string
+          hidden_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cleared_at?: string | null
+          conversation_id?: string
+          hidden_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_conversation_state_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      create_group: {
+        Args: { _member_ids: string[]; _name: string; _photo_url: string }
+        Returns: string
+      }
       start_direct_chat: { Args: { _peer: string }; Returns: string }
     }
     Enums: {
