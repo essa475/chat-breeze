@@ -143,7 +143,8 @@ function ChatsPage() {
           !hiddenAt ||
           (messages ?? []).some(
             (message) =>
-              message.conversation_id === conversation.id && new Date(message.created_at) > new Date(hiddenAt),
+              message.conversation_id === conversation.id &&
+              new Date(message.created_at) > new Date(hiddenAt),
           )
         );
       })
@@ -157,7 +158,9 @@ function ChatsPage() {
           .at(-1);
         const convMessages = (messages ?? []).filter(
           (m) =>
-            m.conversation_id === c.id && !hidden.has(m.id) && (!cutoff || new Date(m.created_at) > new Date(cutoff)),
+            m.conversation_id === c.id &&
+            !hidden.has(m.id) &&
+            (!cutoff || new Date(m.created_at) > new Date(cutoff)),
         );
         const unread = convMessages.filter(
           (m) => m.sender_id !== user.id && !readIds.has(m.id),
