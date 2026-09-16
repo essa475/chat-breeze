@@ -10,7 +10,14 @@ type Props = {
   online?: boolean;
 };
 
-export function Avatar({ path, fallback, size = 48, className = "", square = false, online = false }: Props) {
+export function Avatar({
+  path,
+  fallback,
+  size = 48,
+  className = "",
+  square = false,
+  online = false,
+}: Props) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,7 +49,10 @@ export function Avatar({ path, fallback, size = 48, className = "", square = fal
         )}
       </span>
       {online && !square && (
-        <span className="absolute right-0 bottom-0 h-[22%] w-[22%] rounded-full border-2 border-background bg-online" aria-label="Online" />
+        <span
+          className="absolute right-0 bottom-0 h-[22%] w-[22%] rounded-full border-2 border-background bg-online"
+          aria-label="Online"
+        />
       )}
     </span>
   );

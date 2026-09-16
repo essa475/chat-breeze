@@ -79,7 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Chat Ebola" },
-      { name: "description", content: "Fast, private messaging with files, groups and read receipts." },
+      {
+        name: "description",
+        content: "Fast, private messaging with files, groups and read receipts.",
+      },
       { name: "author", content: "Chat Ebola" },
       { property: "og:title", content: "Chat Ebola" },
       {

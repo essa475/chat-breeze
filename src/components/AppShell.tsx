@@ -38,7 +38,11 @@ export function AppShell({
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-background">
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
-        {title === "Chat Ebola" ? <BrandLogo compact /> : <h1 className="font-display text-2xl font-extrabold">{title}</h1>}
+        {title === "Chat Ebola" ? (
+          <BrandLogo compact />
+        ) : (
+          <h1 className="font-display text-2xl font-extrabold">{title}</h1>
+        )}
         <div className="flex items-center gap-1">{actions}</div>
       </header>
 

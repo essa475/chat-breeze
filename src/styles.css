@@ -190,14 +190,31 @@
 }
 
 @keyframes message-bin {
-  0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  45% { opacity: 0.75; transform: translate(0, 10px) scale(0.72) rotate(3deg); }
-  100% { opacity: 0; transform: translate(0, 55vh) scale(0.06) rotate(14deg); }
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  45% {
+    opacity: 0.75;
+    transform: translate(0, 10px) scale(0.72) rotate(3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 55vh) scale(0.06) rotate(14deg);
+  }
 }
 
 @keyframes bin-pop {
-  0%, 100% { opacity: 0; transform: translateY(24px) scale(0.7); }
-  18%, 72% { opacity: 1; transform: translateY(0) scale(1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.7);
+  }
+  18%,
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @utility animate-rise {

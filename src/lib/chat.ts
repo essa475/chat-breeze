@@ -120,7 +120,10 @@ export function formatBytes(bytes?: number | null): string {
   return `${value.toFixed(value >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-export function kindOf(mime: string | null | undefined, name: string): "image" | "video" | "audio" | "file" {
+export function kindOf(
+  mime: string | null | undefined,
+  name: string,
+): "image" | "video" | "audio" | "file" {
   const m = (mime ?? "").toLowerCase();
   if (m.startsWith("image/")) return "image";
   if (m.startsWith("video/")) return "video";

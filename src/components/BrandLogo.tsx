@@ -6,7 +6,9 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
     <img
       src={compact ? markAsset.url : logoAsset.url}
       alt="Chat Ebola"
-      className={compact ? "h-10 w-10 rounded-full object-cover object-center" : "h-auto w-48 object-contain"}
+      className={
+        compact ? "h-10 w-10 rounded-full object-cover object-center" : "h-auto w-48 object-contain"
+      }
     />
   );
 }

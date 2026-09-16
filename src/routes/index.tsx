@@ -56,9 +56,21 @@ const features = [
 ];
 
 const steps = [
-  { n: "01", t: "Create your account", d: "Sign in with an email or a phone number, then pick a unique username." },
-  { n: "02", t: "Find your people", d: "Search anyone by name, username, email or phone and start a chat instantly." },
-  { n: "03", t: "Say anything", d: "Text, photos, video, documents, spreadsheets and ZIPs up to 50 MB per file." },
+  {
+    n: "01",
+    t: "Create your account",
+    d: "Sign in with an email or a phone number, then pick a unique username.",
+  },
+  {
+    n: "02",
+    t: "Find your people",
+    d: "Search anyone by name, username, email or phone and start a chat instantly.",
+  },
+  {
+    n: "03",
+    t: "Say anything",
+    d: "Text, photos, video, documents, spreadsheets and ZIPs up to 50 MB per file.",
+  },
 ];
 
 function Landing() {
@@ -66,7 +78,10 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <span className="flex items-center gap-2"><BrandLogo compact /><span className="font-display text-lg font-extrabold">Chat Ebola</span></span>
+          <span className="flex items-center gap-2">
+            <BrandLogo compact />
+            <span className="font-display text-lg font-extrabold">Chat Ebola</span>
+          </span>
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
             <a href="#features" className="transition-colors hover:text-foreground">
               Features
@@ -92,8 +107,10 @@ function Landing() {
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-read" /> Real-time, no refresh needed
           </span>
-           <h1 className="sr-only">Chat Ebola</h1>
-           <div className="mt-6 flex justify-center"><BrandLogo /></div>
+          <h1 className="sr-only">Chat Ebola</h1>
+          <div className="mt-6 flex justify-center">
+            <BrandLogo />
+          </div>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
             Messaging that spreads fast and stays yours. Files up to 50 MB, groups with real admin
             controls, and read receipts you can trust.
@@ -143,10 +160,26 @@ function Landing() {
           </h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { i: Files, t: "Any file, up to 50 MB", d: "Images and video preview inline. Documents, Excel and ZIP show name, size and download." },
-              { i: CheckCheck, t: "Sent, delivered, read", d: "Three states on every message. Read is the only splash of colour in the app." },
-              { i: Lock, t: "Request before messaging", d: "Turn on privacy mode and strangers must be accepted before they can reach you." },
-              { i: Users, t: "Groups that scale", d: "Rename, re-photo, add or remove people, promote admins, or quietly leave." },
+              {
+                i: Files,
+                t: "Any file, up to 50 MB",
+                d: "Images and video preview inline. Documents, Excel and ZIP show name, size and download.",
+              },
+              {
+                i: CheckCheck,
+                t: "Sent, delivered, read",
+                d: "Three states on every message. Read is the only splash of colour in the app.",
+              },
+              {
+                i: Lock,
+                t: "Request before messaging",
+                d: "Turn on privacy mode and strangers must be accepted before they can reach you.",
+              },
+              {
+                i: Users,
+                t: "Groups that scale",
+                d: "Rename, re-photo, add or remove people, promote admins, or quietly leave.",
+              },
             ].map((c) => (
               <div
                 key={c.t}
@@ -178,9 +211,14 @@ function Landing() {
         </div>
       </section>
 
-      <section id="privacy" className="border-t border-border bg-primary py-20 text-primary-foreground">
+      <section
+        id="privacy"
+        className="border-t border-border bg-primary py-20 text-primary-foreground"
+      >
         <div className="mx-auto max-w-3xl px-5 text-center">
-          <h2 className="font-display text-3xl font-extrabold sm:text-5xl">Your chat, your rules.</h2>
+          <h2 className="font-display text-3xl font-extrabold sm:text-5xl">
+            Your chat, your rules.
+          </h2>
           <p className="mt-4 text-sm opacity-80 sm:text-base">
             Passwords are hashed and never stored in the app. Messages, files and groups are locked
             to their members by database-level rules — not by hiding buttons.
@@ -196,7 +234,9 @@ function Landing() {
 
       <footer className="border-t border-border py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 text-sm text-muted-foreground sm:flex-row">
-          <span className="flex items-center gap-2 font-display text-base font-extrabold text-foreground"><BrandLogo compact /> Chat Ebola</span>
+          <span className="flex items-center gap-2 font-display text-base font-extrabold text-foreground">
+            <BrandLogo compact /> Chat Ebola
+          </span>
           <span>© {new Date().getFullYear()} Chat Ebola. All rights reserved.</span>
           <Link to="/auth" className="transition-colors hover:text-foreground">
             Sign in

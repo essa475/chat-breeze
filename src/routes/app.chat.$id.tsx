@@ -247,12 +247,19 @@ function ChatPage() {
         const senderId = typeof payload?.userId === "string" ? payload.userId : null;
         if (!senderId || senderId === user.id) return;
         setTypingUsers((current) => new Set(current).add(senderId));
-        window.setTimeout(() => setTypingUsers((current) => {
-          const next = new Set(current); next.delete(senderId); return next;
-        }), 1800);
+        window.setTimeout(
+          () =>
+            setTypingUsers((current) => {
+              const next = new Set(current);
+              next.delete(senderId);
+              return next;
+            }),
+          1800,
+        );
       })
       .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") await channel.track({ userId: user.id, onlineAt: new Date().toISOString() });
+        if (status === "SUBSCRIBED")
+          await channel.track({ userId: user.id, onlineAt: new Date().toISOString() });
       });
     channelRef.current = channel;
     return () => {
@@ -265,9 +272,15 @@ function ChatPage() {
     if (!text.trim() || !user || !channelRef.current) return;
     if (typingTimer.current) clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
-      void channelRef.current?.send({ type: "broadcast", event: "typing", payload: { userId: user.id } });
+      void channelRef.current?.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { userId: user.id },
+      });
     }, 180);
-    return () => { if (typingTimer.current) clearTimeout(typingTimer.current); };
+    return () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    };
   }, [text, user]);
 
   useEffect(() => {
@@ -396,21 +409,27 @@ function ChatPage() {
 
   async function hideForMe(message: Message) {
     if (!user) return;
-    setDeletingId(message.id); setShowDeleteBin(true); setMenu(null);
+    setDeletingId(message.id);
+    setShowDeleteBin(true);
+    setMenu(null);
     await new Promise((resolve) => setTimeout(resolve, 540));
     await supabase.from("message_hides").insert({ message_id: message.id, user_id: user.id });
     setHidden((s) => new Set(s).add(message.id));
-    setDeletingId(null); window.setTimeout(() => setShowDeleteBin(false), 140);
+    setDeletingId(null);
+    window.setTimeout(() => setShowDeleteBin(false), 140);
   }
 
   async function deleteForAll(message: Message) {
-    setDeletingId(message.id); setShowDeleteBin(true); setMenu(null);
+    setDeletingId(message.id);
+    setShowDeleteBin(true);
+    setMenu(null);
     await new Promise((resolve) => setTimeout(resolve, 540));
     await supabase
       .from("messages")
       .update({ body: null, deleted_for_all: true })
       .eq("id", message.id);
-    setDeletingId(null); window.setTimeout(() => setShowDeleteBin(false), 140);
+    setDeletingId(null);
+    window.setTimeout(() => setShowDeleteBin(false), 140);
     void load();
   }
 
@@ -423,7 +442,9 @@ function ChatPage() {
   }
 
   const title = conversation?.is_group ? (conversation.name ?? "Group") : displayName(peer);
-  const typingNames = Array.from(typingUsers).map((memberId) => displayName(profiles.get(memberId)));
+  const typingNames = Array.from(typingUsers).map((memberId) =>
+    displayName(profiles.get(memberId)),
+  );
   const peerOnline = isRecentlyOnline(peer?.last_seen_at);
   const subtitle = typingNames.length
     ? `${typingNames.join(", ")} ${typingNames.length === 1 ? "is" : "are"} typing…`
@@ -455,7 +476,9 @@ function ChatPage() {
           <span className="min-w-0">
             <span className="block truncate font-semibold">{title}</span>
             <span className="block truncate text-xs text-muted-foreground">
-              <span className={typingNames.length || peerOnline ? "text-online" : ""}>{subtitle}</span>
+              <span className={typingNames.length || peerOnline ? "text-online" : ""}>
+                {subtitle}
+              </span>
             </span>
           </span>
         </button>
@@ -502,7 +525,11 @@ function ChatPage() {
                   </p>
                 )}
                 <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  {swiping?.id === m.id && swiping.x < -18 && <span className="mr-2 flex h-8 w-8 self-center items-center justify-center rounded-full bg-muted text-muted-foreground"><CornerUpLeft className="h-4 w-4" /></span>}
+                  {swiping?.id === m.id && swiping.x < -18 && (
+                    <span className="mr-2 flex h-8 w-8 self-center items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <CornerUpLeft className="h-4 w-4" />
+                    </span>
+                  )}
                   <div
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -518,18 +545,24 @@ function ChatPage() {
                     onTouchEnd={() => {
                       if (pressTimer.current) clearTimeout(pressTimer.current);
                       if (swiping?.id === m.id && swiping.x <= -60) {
-                        setReplyTo(m); navigator.vibrate?.(20);
+                        setReplyTo(m);
+                        navigator.vibrate?.(20);
                       }
-                      swipeStart.current = null; setSwiping(null);
+                      swipeStart.current = null;
+                      setSwiping(null);
                     }}
                     onTouchMove={(event) => {
                       if (pressTimer.current) clearTimeout(pressTimer.current);
-                      const start = swipeStart.current; const touch = event.touches[0];
+                      const start = swipeStart.current;
+                      const touch = event.touches[0];
                       if (!start || !touch || start.id !== m.id) return;
-                      const dx = touch.clientX - start.x; const dy = Math.abs(touch.clientY - start.y);
+                      const dx = touch.clientX - start.x;
+                      const dy = Math.abs(touch.clientY - start.y);
                       if (dx < 0 && dy < 50) setSwiping({ id: m.id, x: Math.max(-86, dx * 0.65) });
                     }}
-                    style={swiping?.id === m.id ? { transform: `translateX(${swiping.x}px)` } : undefined}
+                    style={
+                      swiping?.id === m.id ? { transform: `translateX(${swiping.x}px)` } : undefined
+                    }
                     className={`${deletingId === m.id ? "animate-message-bin" : "animate-rise"} relative mb-3 max-w-[80%] touch-pan-y rounded-2xl px-3 py-2 text-sm shadow-sm select-none transition-transform ${
                       mine
                         ? "bg-bubble-out text-bubble-out-foreground"
@@ -597,7 +630,13 @@ function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {showDeleteBin && <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center"><span className="animate-bin-pop rounded-full bg-destructive p-4 text-destructive-foreground shadow-xl"><Trash2 className="h-6 w-6" /></span></div>}
+      {showDeleteBin && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center">
+          <span className="animate-bin-pop rounded-full bg-destructive p-4 text-destructive-foreground shadow-xl">
+            <Trash2 className="h-6 w-6" />
+          </span>
+        </div>
+      )}
 
       {(replyTo || editing) && (
         <div className="flex items-center gap-2 border-t border-border bg-muted px-4 py-2 text-sm">
