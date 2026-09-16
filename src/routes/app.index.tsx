@@ -20,6 +20,7 @@ import {
   displayName,
   formatListTime,
   initials,
+  isRecentlyOnline,
   type Conversation,
   type Message,
   type Profile,
@@ -376,6 +377,7 @@ function ChatsPage() {
                   }
                   size={50}
                   square={conversation.is_group}
+                  online={!conversation.is_group && isRecentlyOnline(peer?.last_seen_at)}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">

@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppRequestsRouteImport } from './routes/app.requests'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppUpdatesRouteImport } from './routes/app.updates'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
 import { Route as AppGroupNewRouteImport } from './routes/app.group.new'
 
@@ -48,6 +49,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/app/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppUpdatesRoute = AppUpdatesRouteImport.update({
+  id: '/app/updates',
+  path: '/app/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppChatIdRoute = AppChatIdRouteImport.update({
   id: '/app/chat/$id',
   path: '/app/chat/$id',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/app/requests': typeof AppRequestsRoute
   '/app/search': typeof AppSearchRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/updates': typeof AppUpdatesRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/new': typeof AppGroupNewRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/app/requests': typeof AppRequestsRoute
   '/app/search': typeof AppSearchRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/updates': typeof AppUpdatesRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/new': typeof AppGroupNewRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/app/requests': typeof AppRequestsRoute
   '/app/search': typeof AppSearchRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/updates': typeof AppUpdatesRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/new': typeof AppGroupNewRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/app/requests'
     | '/app/search'
     | '/app/settings'
+    | '/app/updates'
     | '/app/'
     | '/app/chat/$id'
     | '/app/group/new'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/app/requests'
     | '/app/search'
     | '/app/settings'
+    | '/app/updates'
     | '/app'
     | '/app/chat/$id'
     | '/app/group/new'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/app/requests'
     | '/app/search'
     | '/app/settings'
+    | '/app/updates'
     | '/app/'
     | '/app/chat/$id'
     | '/app/group/new'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   AppRequestsRoute: typeof AppRequestsRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppUpdatesRoute: typeof AppUpdatesRoute
   AppIndexRoute: typeof AppIndexRoute
   AppChatIdRoute: typeof AppChatIdRoute
   AppGroupNewRoute: typeof AppGroupNewRoute
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/updates': {
+      id: '/app/updates'
+      path: '/app/updates'
+      fullPath: '/app/updates'
+      preLoaderRoute: typeof AppUpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/chat/$id': {
       id: '/app/chat/$id'
       path: '/app/chat/$id'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppUpdatesRoute: AppUpdatesRoute,
   AppIndexRoute: AppIndexRoute,
   AppChatIdRoute: AppChatIdRoute,
   AppGroupNewRoute: AppGroupNewRoute,
