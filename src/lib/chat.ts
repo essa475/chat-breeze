@@ -13,6 +13,7 @@ export type Profile = {
   avatar_url: string | null;
   bio: string | null;
   require_request: boolean;
+  last_seen_at: string;
 };
 
 export type Attachment = {
@@ -85,6 +86,18 @@ export function formatListTime(iso: string): string {
   return d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+export function isRecentlyOnline(lastSeen?: string | null): boolean {
+  return Boolean(lastSeen && Date.now() - new Date(lastSeen).getTime() < 70_000);
+}
+
+export function presenceLabel(lastSeen?: string | null): string {
+  if (!lastSeen) return "";
+  if (isRecentlyOnline(lastSeen)) return "online";
+  const value = new Date(lastSeen);
+  const today = value.toDateString() === new Date().toDateString();
+  return `last seen ${today ? "today at " + formatTime(lastSeen) : formatListTime(lastSeen)}`;
+}
+
 export function dayLabel(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -107,7 +120,10 @@ export function formatBytes(bytes?: number | null): string {
   return `${value.toFixed(value >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-export function kindOf(mime: string | null | undefined, name: string): "image" | "video" | "audio" | "file" {
+export function kindOf(
+  mime: string | null | undefined,
+  name: string,
+): "image" | "video" | "audio" | "file" {
   const m = (mime ?? "").toLowerCase();
   if (m.startsWith("image/")) return "image";
   if (m.startsWith("video/")) return "video";

@@ -280,6 +280,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_seen_at: string
           phone: string | null
           require_request: boolean
           updated_at: string
@@ -294,6 +295,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          last_seen_at?: string
           phone?: string | null
           require_request?: boolean
           updated_at?: string
@@ -308,10 +310,70 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_seen_at?: string
           phone?: string | null
           require_request?: boolean
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      status_views: {
+        Row: {
+          status_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          status_id: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Update: {
+          status_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_views_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      statuses: {
+        Row: {
+          author_id: string
+          background: string
+          body: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          media_path: string | null
+          media_type: string | null
+        }
+        Insert: {
+          author_id?: string
+          background?: string
+          body?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_path?: string | null
+          media_type?: string | null
+        }
+        Update: {
+          author_id?: string
+          background?: string
+          body?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_path?: string | null
+          media_type?: string | null
         }
         Relationships: []
       }
@@ -354,6 +416,7 @@ export type Database = {
         Returns: string
       }
       start_direct_chat: { Args: { _peer: string }; Returns: string }
+      touch_presence: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
