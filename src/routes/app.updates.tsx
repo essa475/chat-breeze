@@ -137,7 +137,7 @@ function UpdatesPage() {
     let mediaPath: string | null = null;
     if (file) {
       mediaPath = `${user.id}/statuses/${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage.from("avatars").upload(mediaPath, file);
+      const { error } = await supabase.storage.from("status-media").upload(mediaPath, file);
       if (error) {
         toast.error(error.message);
         setPosting(false);
@@ -163,7 +163,7 @@ function UpdatesPage() {
   async function openStatus(status: Status) {
     setActive(status);
     setActiveMedia(null);
-    if (status.media_path) setActiveMedia(await signedUrl("avatars", status.media_path));
+    if (status.media_path) setActiveMedia(await signedUrl("status-media", status.media_path));
     if (user && status.author_id !== user.id) {
       await supabase.from("status_views").upsert({ status_id: status.id, viewer_id: user.id });
     }

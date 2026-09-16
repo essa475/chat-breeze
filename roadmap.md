@@ -1,1 +1,5 @@
-New request: update app logo; add online, typing, last seen, and status/update experiences matching references; add right-to-left swipe reply; add animated message deletion into a trash can.
+- [x] Update the app logo and favicon from the supplied artwork.
+- [x] Add private 24-hour photo/text Updates with viewed counts.
+- [x] Add online, typing, and last-seen indicators.
+- [x] Add right-to-left swipe reply.
+- [x] Add animated message deletion into a trash can.
