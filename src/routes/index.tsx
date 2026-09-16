@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { TiltCard } from "@/components/TiltCard";
 import { ChatListMock, ConversationMock, GroupMock } from "@/components/PhoneMock";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,7 +66,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <span className="font-display text-lg font-extrabold tracking-tight">Chat Ebola</span>
+          <span className="flex items-center gap-2"><BrandLogo compact /><span className="font-display text-lg font-extrabold">Chat Ebola</span></span>
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
             <a href="#features" className="transition-colors hover:text-foreground">
               Features
@@ -91,9 +92,8 @@ function Landing() {
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-read" /> Real-time, no refresh needed
           </span>
-          <h1 className="mt-6 font-display text-5xl leading-[0.95] font-extrabold sm:text-7xl md:text-8xl">
-            Chat Ebola
-          </h1>
+           <h1 className="sr-only">Chat Ebola</h1>
+           <div className="mt-6 flex justify-center"><BrandLogo /></div>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
             Messaging that spreads fast and stays yours. Files up to 50 MB, groups with real admin
             controls, and read receipts you can trust.
@@ -196,7 +196,7 @@ function Landing() {
 
       <footer className="border-t border-border py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 text-sm text-muted-foreground sm:flex-row">
-          <span className="font-display text-base font-extrabold text-foreground">Chat Ebola</span>
+          <span className="flex items-center gap-2 font-display text-base font-extrabold text-foreground"><BrandLogo compact /> Chat Ebola</span>
           <span>© {new Date().getFullYear()} Chat Ebola. All rights reserved.</span>
           <Link to="/auth" className="transition-colors hover:text-foreground">
             Sign in

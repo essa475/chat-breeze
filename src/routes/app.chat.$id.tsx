@@ -230,6 +230,11 @@ function ChatPage() {
       )
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
         {
           event: "*",
           schema: "public",

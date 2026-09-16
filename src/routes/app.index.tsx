@@ -201,6 +201,11 @@ function ChatsPage() {
         { event: "*", schema: "public", table: "chat_requests" },
         () => void loadRequests(),
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => void load(),
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
