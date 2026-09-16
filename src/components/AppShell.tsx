@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { MessageSquareText, Search, Settings, UserPlus } from "lucide-react";
+import { MessageSquareText, Search, Settings, UserPlus, CircleDashed } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import type { ReactNode } from "react";
 
-type Tab = "chats" | "search" | "requests" | "settings";
+type Tab = "chats" | "updates" | "search" | "requests" | "settings";
 
 export function AppShell({
   title,
@@ -21,9 +22,10 @@ export function AppShell({
     id: Tab;
     label: string;
     icon: typeof Search;
-    to: "/app" | "/app/search" | "/app/requests" | "/app/settings";
+    to: "/app" | "/app/updates" | "/app/search" | "/app/requests" | "/app/settings";
   }[] = [
     { id: "chats", label: "Chats", icon: MessageSquareText, to: "/app" },
+    { id: "updates", label: "Updates", icon: CircleDashed, to: "/app/updates" },
     { id: "search", label: "Find", icon: Search, to: "/app/search" },
     { id: "requests", label: "Requests", icon: UserPlus, to: "/app/requests" },
     { id: "settings", label: "Settings", icon: Settings, to: "/app/settings" },
@@ -32,7 +34,7 @@ export function AppShell({
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-background">
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
-        <h1 className="font-display text-2xl font-extrabold tracking-tight">{title}</h1>
+        {title === "Chat Ebola" ? <BrandLogo compact /> : <h1 className="font-display text-2xl font-extrabold">{title}</h1>}
         <div className="flex items-center gap-1">{actions}</div>
       </header>
 
@@ -52,7 +54,7 @@ export function AppShell({
                 className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium"
               >
                 <span
-                  className={`rounded-full px-5 py-1 transition-colors ${
+                  className={`rounded-full px-3 py-1 transition-colors sm:px-5 ${
                     active ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
                   }`}
                 >

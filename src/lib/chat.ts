@@ -13,6 +13,7 @@ export type Profile = {
   avatar_url: string | null;
   bio: string | null;
   require_request: boolean;
+  last_seen_at: string;
 };
 
 export type Attachment = {
@@ -83,6 +84,18 @@ export function formatListTime(iso: string): string {
   yest.setDate(now.getDate() - 1);
   if (d.toDateString() === yest.toDateString()) return "Yesterday";
   return d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+export function isRecentlyOnline(lastSeen?: string | null): boolean {
+  return Boolean(lastSeen && Date.now() - new Date(lastSeen).getTime() < 70_000);
+}
+
+export function presenceLabel(lastSeen?: string | null): string {
+  if (!lastSeen) return "";
+  if (isRecentlyOnline(lastSeen)) return "online";
+  const value = new Date(lastSeen);
+  const today = value.toDateString() === new Date().toDateString();
+  return `last seen ${today ? "today at " + formatTime(lastSeen) : formatListTime(lastSeen)}`;
 }
 
 export function dayLabel(iso: string): string {
