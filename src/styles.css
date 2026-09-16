@@ -38,6 +38,11 @@
   --color-ring: var(--ring);
   --color-read: var(--read);
   --color-online: var(--online);
+  --color-status-ink: var(--status-ink);
+  --color-status-blue: var(--status-blue);
+  --color-status-green: var(--status-green);
+  --color-status-red: var(--status-red);
+  --color-status-violet: var(--status-violet);
   --color-bubble-out: var(--bubble-out);
   --color-bubble-out-foreground: var(--bubble-out-foreground);
   --color-bubble-in: var(--bubble-in);
@@ -74,6 +79,11 @@
   /* The single colour accent in the product: read receipts */
   --read: oklch(0.62 0.17 251);
   --online: oklch(0.66 0.17 151);
+  --status-ink: oklch(0.22 0.02 250);
+  --status-blue: oklch(0.48 0.16 252);
+  --status-green: oklch(0.48 0.13 159);
+  --status-red: oklch(0.52 0.18 28);
+  --status-violet: oklch(0.48 0.15 318);
 
   --bubble-out: oklch(0.21 0 0);
   --bubble-out-foreground: oklch(0.99 0 0);

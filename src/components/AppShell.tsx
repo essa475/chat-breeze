@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { MessageSquareText, Search, Settings, UserPlus, CircleDashed } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { useSession } from "@/hooks/useSession";
+import { usePresencePulse } from "@/hooks/usePresencePulse";
 import type { ReactNode } from "react";
 
 type Tab = "chats" | "updates" | "search" | "requests" | "settings";
@@ -18,6 +20,8 @@ export function AppShell({
   children: ReactNode;
   requestCount?: number;
 }) {
+  const { user } = useSession();
+  usePresencePulse(user?.id);
   const items: {
     id: Tab;
     label: string;
